@@ -1,5 +1,12 @@
 package main
 
+import (
+	"errors"
+	"github.com/ThreeDotsLabs/go-event-driven/common/log"
+	"github.com/ThreeDotsLabs/watermill"
+	"github.com/sirupsen/logrus"
+)
+
 type User struct {
 	Email string
 }
@@ -57,4 +64,9 @@ func retry(f func() error) {
 		}
 		break
 	}
+}
+
+func main() {
+	var watermillLogger = log.NewWatermill(logrus.NewEntry(logrus.StandardLogger()))
+	watermillLogger.Error("creating new redis stream publisher", errors.New("some err"), watermill.LogFields{})
 }
