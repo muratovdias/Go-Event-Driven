@@ -53,8 +53,6 @@ func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger wat
 	return router
 }
 
-// TODO: implement function that create handlers, also function for sets middlewares
-
 func (b *broker) initSubscribers() {
 	issueReceiptSub, err := redisstream.NewSubscriber(redisstream.SubscriberConfig{
 		Client:        b.rdb,
