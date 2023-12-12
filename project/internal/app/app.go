@@ -99,6 +99,11 @@ func (a *App) Start() {
 			return err
 		}
 
+		err = a.watermillRouter.Close()
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
