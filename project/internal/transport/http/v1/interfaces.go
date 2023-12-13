@@ -1,13 +1,12 @@
 package v1
 
 import (
+	"context"
 	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill/message"
 )
 
 type publisherI interface {
-	Publish(topic string, msgs ...*message.Message) error
-	Close() error
+	Publish(ctx context.Context, event any) error
 }
 
 type loggerI interface {

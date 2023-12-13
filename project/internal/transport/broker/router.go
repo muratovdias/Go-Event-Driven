@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
+	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
 	"github.com/redis/go-redis/v9"
@@ -21,10 +22,10 @@ const (
 
 type broker struct {
 	service         serviceI
-	rdb             *redis.Client
 	watermillLogger watermill.LoggerAdapter
+	rdb             *redis.Client
 	router          *message.Router
-	subscribers     map[string]*redisstream.Subscriber
+	eventProcessor  *cqrs.EventProcessor
 }
 
 func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger watermill.LoggerAdapter) *message.Router {
@@ -38,11 +39,10 @@ func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger wat
 		rdb:             rdb,
 		watermillLogger: watermillLogger,
 		router:          router,
-		subscribers:     make(map[string]*redisstream.Subscriber),
 	}
 
 	// initialize broker subscribers
-	broker.initSubscribers()
+	broker.initEventProcessor()
 
 	// set broker handlers
 	broker.setHandler()
@@ -53,34 +53,25 @@ func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger wat
 	return router
 }
 
-func (b *broker) initSubscribers() {
-	issueReceiptSub, err := redisstream.NewSubscriber(redisstream.SubscriberConfig{
-		Client:        b.rdb,
-		ConsumerGroup: "issue-receipt",
-	}, b.watermillLogger)
+func (b *broker) initEventProcessor() {
+	eventProcessor, err := cqrs.NewEventProcessorWithConfig(
+		b.router,
+		cqrs.EventProcessorConfig{
+			GenerateSubscribeTopic: func(params cqrs.EventProcessorGenerateSubscribeTopicParams) (string, error) {
+				return params.EventName, nil
+			},
+			SubscriberConstructor: func(params cqrs.EventProcessorSubscriberConstructorParams) (message.Subscriber, error) {
+				return redisstream.NewSubscriber(redisstream.SubscriberConfig{
+					Client:        b.rdb,
+					ConsumerGroup: "svc-tockets" + params.HandlerName,
+				}, b.watermillLogger)
+			},
+		})
 	if err != nil {
 		panic(err)
 	}
 
-	appendToTrackerSub, err := redisstream.NewSubscriber(redisstream.SubscriberConfig{
-		Client:        b.rdb,
-		ConsumerGroup: "append-to-tracker",
-	}, b.watermillLogger)
-	if err != nil {
-		panic(err)
-	}
-
-	cancelTicketSub, err := redisstream.NewSubscriber(redisstream.SubscriberConfig{
-		Client:        b.rdb,
-		ConsumerGroup: "cancel-ticket",
-	}, b.watermillLogger)
-	if err != nil {
-		panic(err)
-	}
-
-	b.subscribers[issueReceipt] = issueReceiptSub
-	b.subscribers[appendToTracker] = appendToTrackerSub
-	b.subscribers[cancelTicket] = cancelTicketSub
+	b.eventProcessor = eventProcessor
 }
 
 func (b *broker) setHandler() {
@@ -100,7 +91,7 @@ func (b *broker) setHandler() {
 				msg.Ack()
 				return nil
 			}
-			var eventData entities.Ticket
+			var eventData entities.TicketBookingConfirmed
 			if err := json.Unmarshal(msg.Payload, &eventData); err != nil {
 				return err
 			}
@@ -131,7 +122,7 @@ func (b *broker) setHandler() {
 				return nil
 			}
 
-			var eventData entities.Ticket
+			var eventData entities.TicketBookingConfirmed
 			if err := json.Unmarshal(msg.Payload, &eventData); err != nil {
 				return err
 			}
@@ -178,6 +169,12 @@ func (b *broker) setHandler() {
 			return nil
 		},
 	)
+}
+
+func ticketHandlers() []cqrs.EventHandler {
+	return []cqrs.EventHandler{
+		{},
+	}
 }
 
 func (b *broker) setMiddlewares() {

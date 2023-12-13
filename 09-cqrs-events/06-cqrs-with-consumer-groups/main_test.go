@@ -41,6 +41,7 @@ func Test(t *testing.T) {
 	marshaler := cqrs.JSONMarshaler{
 		GenerateName: cqrs.StructName,
 	}
+
 	eventBus, err := cqrs.NewEventBusWithConfig(
 		pub,
 		cqrs.EventBusConfig{

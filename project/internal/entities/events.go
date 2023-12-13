@@ -28,6 +28,20 @@ type TicketBookingConfirmed struct {
 	BookingID string `json:"booking_id"`
 }
 
+func (t *TicketBookingConfirmed) ToSpreadsheetTicketPayload() []string {
+	return []string{t.TicketID, t.CustomerEmail, t.Price.Amount, t.Price.Currency}
+}
+
+func (t *TicketBookingConfirmed) ToIssueReceiptPayload() IssueReceiptRequest {
+	return IssueReceiptRequest{
+		TicketID: t.TicketID,
+		Price: Money{
+			Amount:   t.Price.Amount,
+			Currency: t.Price.Currency,
+		},
+	}
+}
+
 type TicketBookingCanceled struct {
 	Header EventHeader `json:"header"`
 

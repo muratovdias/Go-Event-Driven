@@ -43,15 +43,16 @@ func Initialize(
 		watermillLogger.Error("creating new redis stream publisher", err, watermill.LogFields{})
 		panic(err)
 	}
+	eventBus, err := broker.NewEventBus(publisher)
+
+	// handler init
+	handler := v1.NewHandler(eventBus, watermillLogger)
 
 	// service init
 	serv := service.NewService(receiptClient, spreadsheetClient)
 
 	// broker router init
 	brokerRouter := broker.NewWatermillRouter(serv, redisClient, watermillLogger)
-
-	// handler init
-	handler := v1.NewHandler(publisher, watermillLogger)
 
 	// set http routes
 	httpRouter := handler.SetRoutes()

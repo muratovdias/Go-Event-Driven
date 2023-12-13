@@ -11,7 +11,3 @@ type Ticket struct {
 type TicketsStatusRequest struct {
 	Tickets []Ticket `json:"tickets"`
 }
-
-func (t *Ticket) ToSpreadsheetTicketPayload() []string {
-	return []string{t.TicketID, t.CustomerEmail, t.Price.Amount, t.Price.Currency}
-}
