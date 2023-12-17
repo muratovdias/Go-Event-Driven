@@ -50,6 +50,10 @@ type TicketBookingCanceled struct {
 	Price         Money  `json:"price"`
 }
 
+func (t *TicketBookingCanceled) ToSpreadsheetTicketPayload() []string {
+	return []string{t.TicketID, t.CustomerEmail, t.Price.Amount, t.Price.Currency}
+}
+
 type TicketRefunded struct {
 	Header EventHeader `json:"header"`
 

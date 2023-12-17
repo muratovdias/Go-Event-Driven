@@ -43,7 +43,12 @@ func Initialize(
 		watermillLogger.Error("creating new redis stream publisher", err, watermill.LogFields{})
 		panic(err)
 	}
-	eventBus, err := broker.NewEventBus(publisher)
+
+	// publisher decorator
+	publisherDecorator := &log.CorrelationPublisherDecorator{Publisher: publisher}
+
+	// event bus init
+	eventBus, err := broker.NewEventBus(publisherDecorator)
 
 	// handler init
 	handler := v1.NewHandler(eventBus, watermillLogger)
