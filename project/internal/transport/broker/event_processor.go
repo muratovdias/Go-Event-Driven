@@ -16,7 +16,7 @@ func (b *broker) initEventProcessor() {
 			SubscriberConstructor: func(params cqrs.EventProcessorSubscriberConstructorParams) (message.Subscriber, error) {
 				return redisstream.NewSubscriber(redisstream.SubscriberConfig{
 					Client:        b.rdb,
-					ConsumerGroup: "svc-tockets" + params.HandlerName,
+					ConsumerGroup: "svc-tickets" + params.HandlerName,
 				}, b.watermillLogger)
 			},
 			Marshaler: cqrs.JSONMarshaler{

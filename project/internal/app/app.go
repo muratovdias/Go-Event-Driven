@@ -7,6 +7,7 @@ import (
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
 	"github.com/ThreeDotsLabs/watermill/message"
+	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
 	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"tickets/internal/repository"
 	"tickets/internal/service"
 	"tickets/internal/transport/broker"
 	v1 "tickets/internal/transport/http/v1"
@@ -27,9 +29,11 @@ type App struct {
 }
 
 func Initialize(
-	receiptClient receiptsClient,
-	spreadsheetClient spreadsheetsClient,
+	receiptsClient receiptsClient,
+	spreadsheetsClient spreadsheetsClient,
+	filesClient filesClient,
 	redisClient *redis.Client,
+	db *sqlx.DB,
 ) *App {
 	// logger init
 	log.Init(logrus.InfoLevel)
@@ -50,11 +54,14 @@ func Initialize(
 	// event bus init
 	eventBus, err := broker.NewEventBus(publisherDecorator)
 
-	// handler init
-	handler := v1.NewHandler(eventBus, watermillLogger)
+	// repository init
+	repo := repository.NewRepository(db)
 
 	// service init
-	serv := service.NewService(receiptClient, spreadsheetClient)
+	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, repo)
+
+	// handler init
+	handler := v1.NewHandler(eventBus, serv, watermillLogger)
 
 	// broker router init
 	brokerRouter := broker.NewWatermillRouter(serv, redisClient, watermillLogger)
@@ -99,7 +106,9 @@ func (a *App) Start() {
 			return err
 		}
 
-		ctx, _ = context.WithTimeout(ctx, time.Second*30)
+		ctx, cancel = context.WithTimeout(ctx, time.Second*30)
+		defer cancel()
+
 		err = a.echoRouter.Shutdown(ctx)
 		if err != nil {
 			return err

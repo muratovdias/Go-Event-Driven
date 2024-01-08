@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"github.com/ThreeDotsLabs/watermill"
+	"tickets/internal/service"
 )
 
 type publisherI interface {
@@ -15,4 +16,12 @@ type loggerI interface {
 	Debug(msg string, fields watermill.LogFields)
 	Trace(msg string, fields watermill.LogFields)
 	With(fields watermill.LogFields) watermill.LoggerAdapter
+}
+
+type serviceI interface {
+	service.ReceiptsClient
+	service.SpreadsheetsClient
+	service.Ticket
+	service.Show
+	service.Booking
 }

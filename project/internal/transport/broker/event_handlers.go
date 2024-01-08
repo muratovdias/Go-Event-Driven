@@ -46,6 +46,30 @@ func (t *ticketHandler) TicketToPrint(ctx context.Context, event *entities.Ticke
 	return nil
 }
 
+func (t *ticketHandler) SaveTicketInDB(ctx context.Context, event *entities.TicketBookingConfirmed) error {
+	if err := t.service.SaveTicket(ctx, *event); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *ticketHandler) StoreTicketContent(ctx context.Context, event *entities.TicketBookingConfirmed) error {
+	if err := t.service.StoreTicketContent(ctx, *event); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *ticketHandler) DeleteTicket(ctx context.Context, event *entities.TicketBookingCanceled) error {
+	if err := t.service.DeleteTicket(ctx, event.TicketID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (t *ticketHandler) TicketToRefund(ctx context.Context, event *entities.TicketBookingCanceled) error {
 	if event.Price.Currency == "" {
 		event.Price.Currency = "USD"
@@ -62,5 +86,8 @@ func (t *ticketHandler) ticketHandlers() []cqrs.EventHandler {
 		cqrs.NewEventHandler("receipts", t.IssueReceipt),
 		cqrs.NewEventHandler("ticket to print", t.TicketToPrint),
 		cqrs.NewEventHandler("refund ticket", t.TicketToRefund),
+		cqrs.NewEventHandler("save ticket in DB", t.SaveTicketInDB),
+		cqrs.NewEventHandler("delete ticket from DB", t.DeleteTicket),
+		cqrs.NewEventHandler("store ticket content", t.StoreTicketContent),
 	}
 }

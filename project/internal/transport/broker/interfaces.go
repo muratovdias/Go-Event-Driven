@@ -1,11 +1,12 @@
 package broker
 
 import (
-	"context"
-	"tickets/internal/entities"
+	"tickets/internal/service"
 )
 
 type serviceI interface {
-	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
-	AppendRow(ctx context.Context, spreadsheetName string, row []string) error
+	service.ReceiptsClient
+	service.SpreadsheetsClient
+	service.FilesClient
+	service.Ticket
 }

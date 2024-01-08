@@ -8,6 +8,12 @@ type Ticket struct {
 	Price         Money       `json:"price,omitempty"`
 }
 
+type TicketList struct {
+	TicketID      string `json:"ticket_id,omitempty"`
+	CustomerEmail string `json:"customer_email,omitempty"`
+	Price         Money  `json:"price,omitempty"`
+}
+
 type TicketsStatusRequest struct {
 	Tickets []Ticket `json:"tickets"`
 }

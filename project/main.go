@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"tickets/internal/app"
+	"tickets/internal/repository"
+	"tickets/internal/service/files"
 	"tickets/internal/service/receipts"
 	"tickets/internal/service/spreadsheet"
 )
@@ -26,14 +28,20 @@ func main() {
 		panic(err)
 	}
 
-	receiptClient := receipts.NewReceiptsClient(client)
-	spreadsheetClient := spreadsheet.NewSpreadsheetsClient(client)
+	receiptsClient := receipts.NewReceiptsClient(client)
+	spreadsheetsClient := spreadsheet.NewSpreadsheetsClient(client)
+	filesClient := files.NewClient(client)
+
+	db, err := repository.InitDB()
+	if err != nil {
+		panic(err)
+	}
 
 	// redis client init
 	rdb := redis.NewClient(&redis.Options{
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
-	app1 := app.Initialize(receiptClient, spreadsheetClient, rdb)
+	app1 := app.Initialize(receiptsClient, spreadsheetsClient, filesClient, rdb, db)
 	app1.Start()
 }

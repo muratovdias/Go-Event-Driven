@@ -3,6 +3,7 @@ package tests_test
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/lithammer/shortuuid/v3"
 	"github.com/redis/go-redis/v9"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"tickets/internal/app"
 	"tickets/internal/entities"
+	"tickets/internal/repository"
 	"tickets/tests/mock"
 	"time"
 
@@ -23,10 +25,18 @@ func TestComponent(t *testing.T) {
 	})
 	defer rdb.Close()
 
+	db, err := repository.InitDB()
+	if err != nil {
+		panic(err)
+	}
+
 	receiptClient := &mock.ReceiptMock{}
 	spreadsheetClient := &mock.SpreadsheetsMock{}
+	filesClient := &mock.FilesMock{
+		Tickets: make(map[string]struct{}),
+	}
 
-	app1 := app.Initialize(receiptClient, spreadsheetClient, rdb)
+	app1 := app.Initialize(receiptClient, spreadsheetClient, filesClient, rdb, db)
 	go app1.Start()
 
 	waitForHttpServer(t)
@@ -65,9 +75,9 @@ func sendTicketsStatus(t *testing.T, req entities.TicketsStatusRequest) {
 
 	correlationID := shortuuid.New()
 
-	ticketIDs := make([]string, 0, len(req.Tickets))
+	ticketsID := make([]string, 0, len(req.Tickets))
 	for _, ticket := range req.Tickets {
-		ticketIDs = append(ticketIDs, ticket.TicketID)
+		ticketsID = append(ticketsID, ticket.TicketID)
 	}
 
 	httpReq, err := http.NewRequest(
@@ -79,6 +89,7 @@ func sendTicketsStatus(t *testing.T, req entities.TicketsStatusRequest) {
 
 	httpReq.Header.Set("Correlation-ID", correlationID)
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Idempotency-Key", uuid.NewString())
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	defer resp.Body.Close()

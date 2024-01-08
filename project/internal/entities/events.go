@@ -7,25 +7,27 @@ import (
 )
 
 type EventHeader struct {
-	ID          string    `json:"id"`
-	PublishedAt time.Time `json:"published_at"`
+	ID             string    `json:"id"`
+	PublishedAt    time.Time `json:"published_at"`
+	IdempotencyKey string    `json:"idempotency_key"`
 }
 
-func NewEventHeader() EventHeader {
+func NewEventHeader(idempotencyKey string) EventHeader {
 	return EventHeader{
-		ID:          uuid.NewString(),
-		PublishedAt: time.Now().UTC(),
+		ID:             uuid.NewString(),
+		PublishedAt:    time.Now().UTC(),
+		IdempotencyKey: idempotencyKey,
 	}
 }
 
 type TicketBookingConfirmed struct {
-	Header EventHeader `json:"header"`
+	Header EventHeader `json:"header,omitempty"`
 
 	TicketID      string `json:"ticket_id"`
 	CustomerEmail string `json:"customer_email"`
 	Price         Money  `json:"price"`
 
-	BookingID string `json:"booking_id"`
+	BookingID string `json:"booking_id,omitempty"`
 }
 
 func (t *TicketBookingConfirmed) ToSpreadsheetTicketPayload() []string {
@@ -34,7 +36,8 @@ func (t *TicketBookingConfirmed) ToSpreadsheetTicketPayload() []string {
 
 func (t *TicketBookingConfirmed) ToIssueReceiptPayload() IssueReceiptRequest {
 	return IssueReceiptRequest{
-		TicketID: t.TicketID,
+		TicketID:       t.TicketID,
+		IdempotencyKey: t.Header.IdempotencyKey,
 		Price: Money{
 			Amount:   t.Price.Amount,
 			Currency: t.Price.Currency,
@@ -58,6 +61,12 @@ type TicketRefunded struct {
 	Header EventHeader `json:"header"`
 
 	TicketID string `json:"ticket_id"`
+}
+
+type TicketPrinted struct {
+	Header   EventHeader `json:"header"`
+	TicketID string      `json:"ticket_id"`
+	FileName string      `json:"file_name"`
 }
 
 type BookingMade struct {

@@ -12,3 +12,7 @@ type receiptsClient interface {
 type spreadsheetsClient interface {
 	AppendRow(ctx context.Context, spreadsheetName string, row []string) error
 }
+
+type filesClient interface {
+	StoreTicketContent(ctx context.Context, ticket entities.TicketBookingConfirmed) error
+}
