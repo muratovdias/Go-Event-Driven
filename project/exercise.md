@@ -1,16 +1,35 @@
-# Catching the Book Ticket request
+# Calling Dead Nation
 
-Now we need to implement the `POST /book-tickets` endpoint.
+Remember that our goal is to proxy requests to Dead Nation?
+To replace the endpoint in production, we need to call the Dead Nation API.
 
-This endpoint should accept requests in this format:
+## Exercise
 
-```json
-{
-  "show_id": "0299a177-a68a-47fb-a9fb-7362a36efa69",
-  "number_of_tickets": 3,
-  "customer_email": "email@example.com"
-}
+File: `project/main.go`
+
+Use the `BookingMade` event that you emitted in the [previous](/trainings/go-event-driven/exercise/148ed9cd-29d4-4132-a57d-d1499e298897) exercise.
+
+Clients from `github.com/ThreeDotsLabs/go-event-driven/common/clients` support calling the Dead Nation API.
+
+```go
+resp, err := h.deadNationClient.PostTicketBookingWithResponse(
+    ctx,
+    dead_nation.PostTicketBookingRequest{
+        CustomerAddress: booking.CustomerEmail,
+        EventId:         booking.DeadNationEventID,
+        NumberOfTickets: booking.NumberOfTickets,
+        BookingId:       booking.BookingID,
+    },
+)
 ```
+
+
+As usually occurs, names from external APIs do not usually correspond 1:1 to our codebase.
+For example: `CustomerAddress` is `CustomerEmail` in our codebase.
+
+**Warning:** `EventId` should be the `dead_nation_id` from the store show request [previous exercise](/trainings/go-event-driven/exercise/d5291467-1e0b-442b-ac2e-e79141e96ff9).
+**You should get this value from the database.**
+This is intentionally a different name: EventID is a term used by Dead Nation, but we prefer name `ShowID` (so it's not confusing with our events in Pub/Sub).
 
 
 <div class="alert alert-dismissible bg-light-primary d-flex flex-column flex-sm-row p-7 mb-10">
@@ -23,29 +42,13 @@ This endpoint should accept requests in this format:
 		</h3>
         <span>
 
-It's intended that booking be separate from tickets.
-Earlier, we were operating on single tickets. 
-Customers are able to book multiple tickets at once, so we need to introduce the concept of booking.
+Repositories or clients are usually good places for making the translation from external language to internal.
+Thanks to that, we can keep language inside our application free from external influences.
 
 </span>
 	</div>
 	</div>
 
-## Exercise
-
-File: `project/main.go`
-
-Implement the `POST /book-tickets` endpoint.
-It should store bookings in the `bookings` table. 
-It's important to use this table name: We'll use it to check your solution.
-
-The booking ID is not sent in the request — you should generate it on your side.
-The booking ID should be returned as the response from this endpoint.
-
-```json
-{
-    "booking_id": "bde0bd8d-88df-4872-a099-d4cf5eb7b491"
-}
-```
+If everythng went fine, Dead Nation should call your `POST /ticket-status` endpoint.
 
 

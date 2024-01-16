@@ -16,3 +16,7 @@ type spreadsheetsClient interface {
 type filesClient interface {
 	StoreTicketContent(ctx context.Context, ticket entities.TicketBookingConfirmed) error
 }
+
+type deadNationClient interface {
+	BookInDeadNation(ctx context.Context, request entities.DeadNationBooking) error
+}

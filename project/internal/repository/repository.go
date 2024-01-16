@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"tickets/internal/entities"
 	"tickets/internal/repository/booking"
@@ -17,6 +18,7 @@ type Ticket interface {
 
 type Show interface {
 	NewShow(ctx context.Context, show entities.Show) (string, error)
+	ShowByID(ctx context.Context, showId uuid.UUID) (entities.Show, error)
 }
 
 type Booking interface {

@@ -5,26 +5,31 @@ import (
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
-	"github.com/redis/go-redis/v9"
+	"tickets/internal/broker/outbox"
 	"time"
 )
 
 type broker struct {
 	eventHandlers   *eventHandlers
 	watermillLogger watermill.LoggerAdapter
-	rdb             *redis.Client
 	router          *message.Router
 	eventProcessor  *cqrs.EventProcessor
 }
 
-func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger watermill.LoggerAdapter) *message.Router {
+func NewWatermillRouter(service serviceI,
+	postgresSubscriber message.Subscriber,
+	publisher message.Publisher,
+	eventProcessorConfig cqrs.EventProcessorConfig,
+	watermillLogger watermill.LoggerAdapter,
+) *message.Router {
 	router, err := message.NewRouter(message.RouterConfig{}, watermillLogger)
 	if err != nil {
 		panic(err)
 	}
 
+	outbox.AddForwarderHandler(postgresSubscriber, publisher, router, watermillLogger)
+
 	broker := &broker{
-		rdb:             rdb,
 		watermillLogger: watermillLogger,
 		router:          router,
 	}
@@ -33,7 +38,10 @@ func NewWatermillRouter(service serviceI, rdb *redis.Client, watermillLogger wat
 	broker.eventHandlers = newEventHandlers(service)
 
 	// initialize broker subscribers
-	broker.initEventProcessor()
+	broker.eventProcessor, err = cqrs.NewEventProcessorWithConfig(router, eventProcessorConfig)
+	if err != nil {
+		panic(err)
+	}
 
 	// set broker handlers
 	broker.setHandler()

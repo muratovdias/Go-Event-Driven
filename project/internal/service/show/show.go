@@ -19,3 +19,7 @@ func (s *Service) NewShow(ctx context.Context, show entities.Show) (string, erro
 	show.ShowID = uuid.NewString()
 	return s.repo.NewShow(ctx, show)
 }
+
+func (s *Service) ShowByID(ctx context.Context, showId uuid.UUID) (entities.Show, error) {
+	return s.repo.ShowByID(ctx, showId)
+}

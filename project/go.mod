@@ -6,12 +6,14 @@ require (
 	github.com/ThreeDotsLabs/go-event-driven v0.0.11
 	github.com/ThreeDotsLabs/watermill v1.3.2
 	github.com/ThreeDotsLabs/watermill-redisstream v1.2.2
+	github.com/ThreeDotsLabs/watermill-sql/v2 v2.0.0
 	github.com/google/uuid v1.3.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/lib/pq v1.10.9
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/redis/go-redis/v9 v9.2.1
+	github.com/samber/lo v1.39.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/sync v0.4.0
@@ -40,6 +42,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vmihailenco/msgpack v4.0.4+incompatible // indirect
 	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect

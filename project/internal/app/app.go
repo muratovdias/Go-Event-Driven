@@ -15,9 +15,11 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	broker2 "tickets/internal/broker"
+	"tickets/internal/broker/event"
+	"tickets/internal/broker/outbox"
 	"tickets/internal/repository"
 	"tickets/internal/service"
-	"tickets/internal/transport/broker"
 	v1 "tickets/internal/transport/http/v1"
 	"time"
 )
@@ -32,6 +34,7 @@ func Initialize(
 	receiptsClient receiptsClient,
 	spreadsheetsClient spreadsheetsClient,
 	filesClient filesClient,
+	deadNationClient deadNationClient,
 	redisClient *redis.Client,
 	db *sqlx.DB,
 ) *App {
@@ -52,19 +55,26 @@ func Initialize(
 	publisherDecorator := &log.CorrelationPublisherDecorator{Publisher: publisher}
 
 	// event bus init
-	eventBus, err := broker.NewEventBus(publisherDecorator)
+	eventBus, err := broker2.NewEventBus(publisherDecorator)
 
 	// repository init
 	repo := repository.NewRepository(db)
 
 	// service init
-	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, repo)
+	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, repo)
 
 	// handler init
 	handler := v1.NewHandler(eventBus, serv, watermillLogger)
 
+	// postgres subscriber
+	postgresSubscriber := outbox.NewPostgresSubscriber(db, watermillLogger)
+
+	// event processor config
+	eventProcessorConfig := event.NewProcessorConfig(redisClient, watermillLogger)
+
 	// broker router init
-	brokerRouter := broker.NewWatermillRouter(serv, redisClient, watermillLogger)
+	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisherDecorator,
+		eventProcessorConfig, watermillLogger)
 
 	// set http routes
 	httpRouter := handler.SetRoutes()

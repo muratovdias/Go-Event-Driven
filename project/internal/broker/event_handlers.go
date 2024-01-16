@@ -2,6 +2,8 @@ package broker
 
 import (
 	"context"
+	"fmt"
+	"github.com/ThreeDotsLabs/go-event-driven/common/log"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"tickets/internal/entities"
 )
@@ -78,6 +80,27 @@ func (t *ticketHandler) TicketToRefund(ctx context.Context, event *entities.Tick
 	if err := t.service.AppendRow(ctx, "tickets-to-refund", event.ToSpreadsheetTicketPayload()); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (t *ticketHandler) BookPlaceInDeadNation(ctx context.Context, event *entities.BookingMade) error {
+	log.FromContext(ctx).Info("Booking ticket in Dead Nation")
+
+	show, err := t.service.ShowByID(ctx, event.ShowId)
+	if err != nil {
+		return fmt.Errorf("failed to get show: %w", err)
+	}
+
+	err = t.service.BookInDeadNation(ctx, entities.DeadNationBooking{
+		CustomerEmail:     event.CustomerEmail,
+		DeadNationEventID: show.DeadNationID,
+		NumberOfTickets:   event.NumberOfTickets,
+		BookingID:         event.BookingID,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to book in dead nation: %w", err)
+	}
+
 	return nil
 }
 

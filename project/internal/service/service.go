@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"tickets/internal/entities"
 	"tickets/internal/repository"
 	"tickets/internal/service/booking"
@@ -21,6 +22,10 @@ type FilesClient interface {
 	StoreTicketContent(ctx context.Context, ticket entities.TicketBookingConfirmed) error
 }
 
+type DeadNationClient interface {
+	BookInDeadNation(ctx context.Context, request entities.DeadNationBooking) error
+}
+
 type Ticket interface {
 	SaveTicket(ctx context.Context, ticket entities.TicketBookingConfirmed) error
 	DeleteTicket(ctx context.Context, ticketID string) error
@@ -29,6 +34,7 @@ type Ticket interface {
 
 type Show interface {
 	NewShow(ctx context.Context, show entities.Show) (string, error)
+	ShowByID(ctx context.Context, showId uuid.UUID) (entities.Show, error)
 }
 
 type Booking interface {
@@ -39,18 +45,23 @@ type Service struct {
 	ReceiptsClient
 	SpreadsheetsClient
 	FilesClient
+	DeadNationClient
 	Ticket
 	Show
 	Booking
 }
 
-func NewService(receiptsClient ReceiptsClient, spreadsheetsClient SpreadsheetsClient, filesClient FilesClient,
+func NewService(receiptsClient ReceiptsClient,
+	spreadsheetsClient SpreadsheetsClient,
+	filesClient FilesClient,
+	deadNationClient DeadNationClient,
 	repo *repository.Repository) *Service {
 
 	return &Service{
 		ReceiptsClient:     receiptsClient,
 		SpreadsheetsClient: spreadsheetsClient,
 		FilesClient:        filesClient,
+		DeadNationClient:   deadNationClient,
 		Ticket:             ticket.NewService(repo.Ticket),
 		Show:               show.NewService(repo.Show),
 		Booking:            booking.NewService(repo.Booking),
