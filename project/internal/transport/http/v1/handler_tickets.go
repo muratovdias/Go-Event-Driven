@@ -46,6 +46,20 @@ func (h *Handler) Tickets(c echo.Context) error {
 			if err != nil {
 				h.watermillLogger.Error("send message to TicketPrinted topic", err, watermill.LogFields{})
 			}
+			//log.Println("messages sent")
+			//h.watermillLogger.Info("messages sent", nil)
+
+			//confirmed := entities.TicketBookingConfirmed{
+			//	Header:        ticket.Header,
+			//	TicketID:      ticket.TicketID,
+			//	CustomerEmail: ticket.CustomerEmail,
+			//	Price:         ticket.Price,
+			//}
+			//_, err = h.service.IssueReceipt(c.Request().Context(), confirmed.ToIssueReceiptPayload())
+			//if err != nil {
+			//	return err
+			//}
+
 		case "canceled":
 			// publish message
 			err := h.publisher.Publish(context.Background(), entities.TicketBookingCanceled{

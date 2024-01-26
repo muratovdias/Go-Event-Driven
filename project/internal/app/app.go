@@ -3,9 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/ThreeDotsLabs/go-event-driven/common/log"
-	"github.com/ThreeDotsLabs/watermill"
-	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/jmoiron/sqlx"
 	"github.com/labstack/echo/v4"
@@ -43,19 +42,16 @@ func Initialize(
 	watermillLogger := log.NewWatermill(logrus.NewEntry(logrus.StandardLogger()))
 
 	// publisher init
-	publisher, err := redisstream.NewPublisher(redisstream.PublisherConfig{
-		Client: redisClient,
-	}, watermillLogger)
-	if err != nil {
-		watermillLogger.Error("creating new redis stream publisher", err, watermill.LogFields{})
-		panic(err)
-	}
+	publisher := broker2.NewRedisPublisher(redisClient, watermillLogger)
 
 	// publisher decorator
-	publisherDecorator := &log.CorrelationPublisherDecorator{Publisher: publisher}
+	publisher = &log.CorrelationPublisherDecorator{Publisher: publisher}
 
 	// event bus init
-	eventBus, err := broker2.NewEventBus(publisherDecorator)
+	eventBus, err := broker2.NewEventBus(publisher)
+	if err != nil {
+		panic(err)
+	}
 
 	// repository init
 	repo := repository.NewRepository(db)
@@ -73,7 +69,7 @@ func Initialize(
 	eventProcessorConfig := event.NewProcessorConfig(redisClient, watermillLogger)
 
 	// broker router init
-	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisherDecorator,
+	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisher,
 		eventProcessorConfig, watermillLogger)
 
 	// set http routes
@@ -94,8 +90,12 @@ func (a *App) Start() {
 
 	g, ctx := errgroup.WithContext(ctx)
 
+	//ctxWithCancel, cancel := context.WithCancel(ctx)
+
 	g.Go(func() error {
-		return a.watermillRouter.Run(ctx)
+		err := a.watermillRouter.Run(ctx)
+		fmt.Printf("errrrrrrror: %s\n", err.Error())
+		return err
 	})
 
 	g.Go(func() error {

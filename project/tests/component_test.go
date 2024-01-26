@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"github.com/google/uuid"
 	"github.com/lithammer/shortuuid/v3"
@@ -24,35 +25,41 @@ func TestComponent(t *testing.T) {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 	defer rdb.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	rdb.Ping(ctx)
 
 	db, err := repository.InitDB()
 	if err != nil {
 		panic(err)
 	}
 
-	receiptClient := &mock.ReceiptMock{}
-	spreadsheetClient := &mock.SpreadsheetsMock{}
-	filesClient := &mock.FilesMock{
-		Tickets: make(map[string]struct{}),
-	}
+	receiptClient := &mock.ReceiptMock{IssuedReceipts: make([]entities.IssueReceiptRequest, 0)}
+	spreadsheetClient := &mock.SpreadsheetsMock{Rows: make(map[string][][]string)}
+	filesClient := &mock.FilesMock{Tickets: make(map[string]struct{})}
+	deadNationClient := &mock.DeadNationClient{DeadNationBookings: make([]entities.DeadNationBooking, 0)}
 
-	app1 := app.Initialize(receiptClient, spreadsheetClient, filesClient, rdb, db)
+	app1 := app.Initialize(receiptClient, spreadsheetClient, filesClient, deadNationClient, rdb, db)
 	go app1.Start()
 
 	waitForHttpServer(t)
 
 	sendTicketsStatus(t, testTicketStatusRequest())
 
-	assertReceiptForTicketIssued(t, receiptClient, testTicket("2"))
+	assertReceiptForTicketIssued(t, receiptClient, testTicket("2", "confirmed"))
+	assertTicketPrinted(t, filesClient, testTicket("2", "confirmed"))
+	assertRowToSheetAdded(t, spreadsheetClient, testTicket("2", "confirmed"), "tickets-to-print")
+
 }
 
 func waitForHttpServer(t *testing.T) {
 	t.Helper()
+	<-time.After(time.Second * 2)
 
 	require.EventuallyWithT(
 		t,
 		func(t *assert.CollectT) {
-			resp, err := http.Get("http://localhost:8080/health")
+			resp, err := http.Get("http://localhost:8000/health")
 			if !assert.NoError(t, err) {
 				return
 			}
@@ -82,7 +89,7 @@ func sendTicketsStatus(t *testing.T, req entities.TicketsStatusRequest) {
 
 	httpReq, err := http.NewRequest(
 		http.MethodPost,
-		"http://localhost:8080/tickets-status",
+		"http://localhost:8000/tickets-status",
 		bytes.NewBuffer(payload),
 	)
 	require.NoError(t, err)
@@ -93,9 +100,12 @@ func sendTicketsStatus(t *testing.T, req entities.TicketsStatusRequest) {
 
 	resp, err := http.DefaultClient.Do(httpReq)
 	defer resp.Body.Close()
+
 	require.NoError(t, err)
 	require.Equal(t, http.StatusOK, resp.StatusCode)
 }
+
+/// asserts function START ///
 
 func assertReceiptForTicketIssued(t *testing.T, receiptsService *mock.ReceiptMock, ticket entities.Ticket) {
 	assert.EventuallyWithT(
@@ -127,19 +137,59 @@ func assertReceiptForTicketIssued(t *testing.T, receiptsService *mock.ReceiptMoc
 	assert.Equal(t, ticket.Price.Currency, receipt.Price.Currency)
 }
 
+func assertTicketPrinted(t *testing.T, filesApi *mock.FilesMock, ticket entities.Ticket) {
+	assert.EventuallyWithT(
+		t,
+		func(collect *assert.CollectT) {
+			content, err := filesApi.DownloadTicketContent(context.Background(), ticket.TicketID)
+
+			require.NoError(t, err)
+			assert.Equal(t, struct{}{}, content)
+		},
+		time.Second*10,
+		time.Millisecond*100,
+	)
+}
+
+func assertRowToSheetAdded(t *testing.T, spreadsheetsService *mock.SpreadsheetsMock, ticket entities.Ticket, sheetName string) bool {
+	return assert.EventuallyWithT(
+		t,
+		func(t *assert.CollectT) {
+			rows, ok := spreadsheetsService.Rows[sheetName]
+			if !assert.True(t, ok, "sheet %s not found", sheetName) {
+				return
+			}
+
+			allValues := []string{}
+
+			for _, row := range rows {
+				for _, col := range row {
+					allValues = append(allValues, col)
+				}
+			}
+
+			assert.Contains(t, allValues, ticket.TicketID, "ticket id not found in sheet %s", sheetName)
+		},
+		10*time.Second,
+		100*time.Millisecond,
+	)
+}
+
+/// asserts function END ///
+
 func testTicketStatusRequest() entities.TicketsStatusRequest {
 	return entities.TicketsStatusRequest{
 		Tickets: []entities.Ticket{
-			testTicket("1"),
-			testTicket("2"),
+			testTicket("1", "confirmed"),
+			testTicket("2", "confirmed"),
 		},
 	}
 }
 
-func testTicket(id string) entities.Ticket {
+func testTicket(id, status string) entities.Ticket {
 	return entities.Ticket{
 		TicketID: id,
-		Status:   "confirmed",
+		Status:   status,
 		Price: entities.Money{
 			Amount:   "test",
 			Currency: "test",

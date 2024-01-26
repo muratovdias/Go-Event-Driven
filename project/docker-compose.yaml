@@ -4,7 +4,7 @@ services:
   gateway:
     image: ghcr.io/threedotslabs/event-driven-gateway:latest
     ports:
-      - "8888:8080"
+      - "8080:8080"
     environment:
       SOLUTION_BASE_URL: "http://host.docker.internal:8080/"
 
@@ -15,7 +15,7 @@ services:
   redis:
     image: redis:6.2-alpine
     ports:
-      - "6378:6378"
+      - "6379:6379"
 
   postgres:
     image: postgres:15.2-alpine

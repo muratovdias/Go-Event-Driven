@@ -8,7 +8,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-var marshaler = cqrs.JSONMarshaler{
+var marshaller = cqrs.JSONMarshaler{
 	GenerateName: cqrs.StructName,
 }
 
@@ -23,7 +23,7 @@ func NewProcessorConfig(redisClient *redis.Client, watermillLogger watermill.Log
 				ConsumerGroup: "svc-tickets." + params.HandlerName,
 			}, watermillLogger)
 		},
-		Marshaler: marshaler,
+		Marshaler: marshaller,
 		Logger:    watermillLogger,
 	}
 }

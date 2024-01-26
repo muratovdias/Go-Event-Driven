@@ -22,6 +22,17 @@ func NewWatermillRouter(service serviceI,
 	eventProcessorConfig cqrs.EventProcessorConfig,
 	watermillLogger watermill.LoggerAdapter,
 ) *message.Router {
+	// validate
+	if service == nil {
+		panic("missing service")
+	}
+	if postgresSubscriber == nil {
+		panic("missing postgresSubscriber")
+	}
+	if publisher == nil {
+		panic("missing publisher")
+	}
+
 	router, err := message.NewRouter(message.RouterConfig{}, watermillLogger)
 	if err != nil {
 		panic(err)
@@ -44,7 +55,7 @@ func NewWatermillRouter(service serviceI,
 	}
 
 	// set broker handlers
-	broker.setHandler()
+	broker.setEventHandler()
 
 	// set middlewares
 	broker.setMiddlewares()
@@ -52,8 +63,10 @@ func NewWatermillRouter(service serviceI,
 	return router
 }
 
-func (b *broker) setHandler() {
-	err := b.eventProcessor.AddHandlers(b.eventHandlers.ticketHandler.ticketHandlers()...)
+func (b *broker) setEventHandler() {
+	err := b.eventProcessor.AddHandlers(
+		b.eventHandlers.ticketHandler.ticketHandlers()...,
+	)
 	if err != nil {
 		panic(err)
 	}
@@ -68,5 +81,5 @@ func (b *broker) setMiddlewares() {
 		Multiplier:      2,
 		Logger:          b.watermillLogger,
 	}
-	b.router.AddMiddleware(middleware.Recoverer, middleware.CorrelationID, PropagateCorrelationID, LoggingMiddleware, retryMiddleware.Middleware)
+	b.router.AddMiddleware(middleware.Recoverer, PropagateCorrelationID, middleware.CorrelationID, LoggingMiddleware, retryMiddleware.Middleware)
 }

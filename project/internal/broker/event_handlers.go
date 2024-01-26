@@ -49,6 +49,7 @@ func (t *ticketHandler) TicketToPrint(ctx context.Context, event *entities.Ticke
 }
 
 func (t *ticketHandler) SaveTicketInDB(ctx context.Context, event *entities.TicketBookingConfirmed) error {
+
 	if err := t.service.SaveTicket(ctx, *event); err != nil {
 		return err
 	}
@@ -106,11 +107,12 @@ func (t *ticketHandler) BookPlaceInDeadNation(ctx context.Context, event *entiti
 
 func (t *ticketHandler) ticketHandlers() []cqrs.EventHandler {
 	return []cqrs.EventHandler{
-		cqrs.NewEventHandler("receipts", t.IssueReceipt),
-		cqrs.NewEventHandler("ticket to print", t.TicketToPrint),
-		cqrs.NewEventHandler("refund ticket", t.TicketToRefund),
-		cqrs.NewEventHandler("save ticket in DB", t.SaveTicketInDB),
-		cqrs.NewEventHandler("delete ticket from DB", t.DeleteTicket),
-		cqrs.NewEventHandler("store ticket content", t.StoreTicketContent),
+		cqrs.NewEventHandler("IssueReceipt", t.IssueReceipt),
+		cqrs.NewEventHandler("TicketToPrint", t.TicketToPrint),
+		cqrs.NewEventHandler("TicketToRefund", t.TicketToRefund),
+		cqrs.NewEventHandler("SaveTicketInDB", t.SaveTicketInDB),
+		cqrs.NewEventHandler("DeleteTicket", t.DeleteTicket),
+		cqrs.NewEventHandler("StoreTicketContent", t.StoreTicketContent),
+		cqrs.NewEventHandler("BookPlaceInDeadNation", t.BookPlaceInDeadNation),
 	}
 }

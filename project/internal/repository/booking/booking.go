@@ -2,6 +2,7 @@ package booking
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/jmoiron/sqlx"
@@ -23,9 +24,27 @@ func NewRepo(db *sqlx.DB) *Repo {
 }
 
 func (r *Repo) BookTicket(ctx context.Context, booking entities.Booking) (string, error) {
-	tx, err := r.db.Beginx()
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+	})
 	if err != nil {
 		return "", err
+	}
+
+	row := r.db.QueryRowContext(ctx, compareBeforeBooking, booking.ShowID)
+	if err != nil {
+		return "", err
+	}
+	var available, booked int
+
+	err = row.Scan(&available, &booked)
+	if err != nil {
+		return "", err
+	}
+
+	if (available - booked) < booking.NumberOfTickets {
+		tx.Rollback()
+		return "", fmt.Errorf("not enough seats available")
 	}
 
 	rows, err := tx.QueryContext(ctx, inserBooking, booking.BookingID, booking.ShowID, booking.NumberOfTickets, booking.CustomerEmail)
@@ -45,22 +64,6 @@ func (r *Repo) BookTicket(ctx context.Context, booking entities.Booking) (string
 			return "", err
 		}
 	}
-
-	//payload, err := json.Marshal(booking)
-	//if err != nil {
-	//	return "", err
-	//}
-
-	//msg := watermillMessage.NewMessage(uuid.NewString(), payload)
-	//
-	//if err := PublishInTx(tx, msg, r.logger); err != nil {
-	//	rbErr := tx.Rollback()
-	//	if rbErr != nil {
-	//		return "", err
-	//	}
-	//
-	//	return "", err
-	//}
 
 	outboxPublisher, err := outbox.NewPublisherForDb(ctx, tx)
 	if err != nil {
