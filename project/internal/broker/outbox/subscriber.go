@@ -12,7 +12,7 @@ func NewPostgresSubscriber(db *sqlx.DB, logger watermill.LoggerAdapter) *watermi
 	sub, err := watermillSQL.NewSubscriber(
 		db,
 		watermillSQL.SubscriberConfig{
-			PollInterval:     time.Millisecond * 100,
+			PollInterval:     time.Millisecond * 10,
 			InitializeSchema: true,
 			SchemaAdapter:    watermillSQL.DefaultPostgreSQLSchema{},
 			OffsetsAdapter:   watermillSQL.DefaultPostgreSQLOffsetsAdapter{},

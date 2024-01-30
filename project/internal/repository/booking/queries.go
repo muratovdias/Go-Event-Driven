@@ -10,7 +10,7 @@ RETURNING booking_id
 	compareBeforeBooking = `
 SELECT
   s.number_of_tickets AS available_tickets,
-  COUNT(b.number_of_tickets) AS booked_tickets
+  COALESCE(SUM(b.number_of_tickets), 0) AS booked_tickets
 FROM
   shows s
 LEFT JOIN

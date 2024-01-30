@@ -1,9 +1,11 @@
 module tickets
 
-go 1.20
+go 1.21
+
+toolchain go1.21.1
 
 require (
-	github.com/ThreeDotsLabs/go-event-driven v0.0.11
+	github.com/ThreeDotsLabs/go-event-driven v0.0.12
 	github.com/ThreeDotsLabs/watermill v1.3.2
 	github.com/ThreeDotsLabs/watermill-redisstream v1.2.2
 	github.com/ThreeDotsLabs/watermill-sql/v2 v2.0.0

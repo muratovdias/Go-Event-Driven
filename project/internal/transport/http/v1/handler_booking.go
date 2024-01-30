@@ -2,10 +2,11 @@ package v1
 
 import (
 	"errors"
-	"fmt"
+	"github.com/ThreeDotsLabs/watermill"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"tickets/internal/entities"
+	booking2 "tickets/internal/repository/booking"
 )
 
 func (h *Handler) BookTicket(c echo.Context) error {
@@ -17,10 +18,12 @@ func (h *Handler) BookTicket(c echo.Context) error {
 
 	bookingID, err := h.service.BookTicket(c.Request().Context(), booking)
 	if err != nil {
-		if errors.Is(err, fmt.Errorf("not enough seats available")) {
-			return echo.NewHTTPError(http.StatusBadRequest, "not enough seats available")
+		if errors.As(err, &booking2.NotEnoughSeatsAvailableError{}) {
+			h.watermillLogger.Error("", err, watermill.LogFields{"error": err.Error()})
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		return echo.NewHTTPError(http.StatusBadRequest, "not enough seats available")
+		h.watermillLogger.Error("", err, watermill.LogFields{"error": err.Error()})
+		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{

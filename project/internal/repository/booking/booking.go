@@ -23,6 +23,15 @@ func NewRepo(db *sqlx.DB) *Repo {
 	}
 }
 
+type NotEnoughSeatsAvailableError struct {
+	Available int
+	Booked    int
+}
+
+func (e NotEnoughSeatsAvailableError) Error() string {
+	return fmt.Sprintf("not enough seats available, available: %d, booked: %d", e.Available, e.Booked)
+}
+
 func (r *Repo) BookTicket(ctx context.Context, booking entities.Booking) (string, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelSerializable,
@@ -44,7 +53,10 @@ func (r *Repo) BookTicket(ctx context.Context, booking entities.Booking) (string
 
 	if (available - booked) < booking.NumberOfTickets {
 		tx.Rollback()
-		return "", fmt.Errorf("not enough seats available")
+		return "", NotEnoughSeatsAvailableError{
+			available,
+			booked,
+		}
 	}
 
 	rows, err := tx.QueryContext(ctx, inserBooking, booking.BookingID, booking.ShowID, booking.NumberOfTickets, booking.CustomerEmail)
