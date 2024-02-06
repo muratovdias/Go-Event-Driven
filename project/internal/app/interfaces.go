@@ -7,6 +7,7 @@ import (
 
 type receiptsClient interface {
 	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
+	PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
 }
 
 type spreadsheetsClient interface {
@@ -19,4 +20,8 @@ type filesClient interface {
 
 type deadNationClient interface {
 	BookInDeadNation(ctx context.Context, request entities.DeadNationBooking) error
+}
+
+type paymentClient interface {
+	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
 }

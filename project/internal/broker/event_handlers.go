@@ -105,7 +105,7 @@ func (t *ticketHandler) BookPlaceInDeadNation(ctx context.Context, event *entiti
 	return nil
 }
 
-func (t *ticketHandler) ticketHandlers() []cqrs.EventHandler {
+func (t *ticketHandler) ticketEventHandlers() []cqrs.EventHandler {
 	return []cqrs.EventHandler{
 		cqrs.NewEventHandler("IssueReceipt", t.IssueReceipt),
 		cqrs.NewEventHandler("TicketToPrint", t.TicketToPrint),
@@ -114,5 +114,11 @@ func (t *ticketHandler) ticketHandlers() []cqrs.EventHandler {
 		cqrs.NewEventHandler("DeleteTicket", t.DeleteTicket),
 		cqrs.NewEventHandler("StoreTicketContent", t.StoreTicketContent),
 		cqrs.NewEventHandler("BookPlaceInDeadNation", t.BookPlaceInDeadNation),
+	}
+}
+
+func (t *ticketHandler) ticketCommandHandler() []cqrs.CommandHandler {
+	return []cqrs.CommandHandler{
+		cqrs.NewCommandHandler("RefundTicket", t.RefundTicket),
 	}
 }

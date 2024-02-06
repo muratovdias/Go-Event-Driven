@@ -12,6 +12,7 @@ import (
 
 type broker struct {
 	eventHandlers    *eventHandlers
+	commandHandlers  *commandHandlers
 	watermillLogger  watermill.LoggerAdapter
 	router           *message.Router
 	eventProcessor   *cqrs.EventProcessor
@@ -51,6 +52,9 @@ func NewWatermillRouter(service serviceI,
 	// initialize event handlers
 	broker.eventHandlers = newEventHandlers(service)
 
+	// initialize command handlers
+	broker.commandHandlers = newCommandHandlers(service)
+
 	// initialize event subscriber
 	broker.eventProcessor, err = cqrs.NewEventProcessorWithConfig(router, eventProcessorConfig)
 	if err != nil {
@@ -63,10 +67,11 @@ func NewWatermillRouter(service serviceI,
 		panic(fmt.Errorf("initialize command subscriber failed: %w", err))
 	}
 
-	// set broker handlers
-	broker.setEventHandler()
+	// set event handlers
+	broker.setEventHandlers()
 
-	// TODO: set command handlers
+	// set command handlers
+	broker.setCommandHandlers()
 
 	// set middlewares
 	broker.setMiddlewares()
@@ -74,9 +79,18 @@ func NewWatermillRouter(service serviceI,
 	return router
 }
 
-func (b *broker) setEventHandler() {
+func (b *broker) setEventHandlers() {
 	err := b.eventProcessor.AddHandlers(
-		b.eventHandlers.ticketHandler.ticketHandlers()...,
+		b.eventHandlers.ticketHandler.ticketEventHandlers()...,
+	)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (b *broker) setCommandHandlers() {
+	err := b.commandProcessor.AddHandlers(
+		b.commandHandlers.ticketHandler.ticketCommandHandler()...,
 	)
 	if err != nil {
 		panic(err)

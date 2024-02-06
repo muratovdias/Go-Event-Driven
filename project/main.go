@@ -12,6 +12,7 @@ import (
 	"tickets/internal/repository"
 	"tickets/internal/service/deadnation"
 	"tickets/internal/service/files"
+	"tickets/internal/service/payment"
 	"tickets/internal/service/receipts"
 	"tickets/internal/service/spreadsheet"
 )
@@ -34,6 +35,7 @@ func main() {
 	spreadsheetsClient := spreadsheet.NewSpreadsheetsClient(client)
 	filesClient := files.NewClient(client)
 	deadNationClient := deadnation.NewDeadNationClient(client)
+	paymentClient := payment.NewPaymentClient(client)
 
 	db, err := repository.InitDB()
 	if err != nil {
@@ -45,6 +47,6 @@ func main() {
 		Addr: os.Getenv("REDIS_ADDR"),
 	})
 
-	app1 := app.Initialize(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, rdb, db)
+	app1 := app.Initialize(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, paymentClient, rdb, db)
 	app1.Start()
 }

@@ -9,6 +9,7 @@ import (
 type serviceI interface {
 	// Receipts
 	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
+	PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
 
 	// Spreadsheets
 	AppendRow(ctx context.Context, spreadsheetName string, row []string) error
@@ -26,4 +27,7 @@ type serviceI interface {
 	SaveTicket(ctx context.Context, ticket entities.TicketBookingConfirmed) error
 	DeleteTicket(ctx context.Context, ticketID string) error
 	TicketList(ctx context.Context) ([]entities.TicketList, error)
+
+	// Payment
+	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
 }

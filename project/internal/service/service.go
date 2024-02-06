@@ -12,7 +12,7 @@ import (
 
 type ReceiptsClient interface {
 	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
-	// TODO: void the receipt
+	PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
 }
 
 type SpreadsheetsClient interface {
@@ -42,21 +42,26 @@ type Booking interface {
 	BookTicket(ctx context.Context, booking entities.Booking) (string, error)
 }
 
+type PaymentClient interface {
+	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
+}
+
 type Service struct {
 	ReceiptsClient
 	SpreadsheetsClient
 	FilesClient
 	DeadNationClient
+	PaymentClient
 	Ticket
 	Show
 	Booking
-	// TODO: payment service
 }
 
 func NewService(receiptsClient ReceiptsClient,
 	spreadsheetsClient SpreadsheetsClient,
 	filesClient FilesClient,
 	deadNationClient DeadNationClient,
+	paymentClient PaymentClient,
 	repo *repository.Repository) *Service {
 
 	return &Service{
@@ -64,6 +69,7 @@ func NewService(receiptsClient ReceiptsClient,
 		SpreadsheetsClient: spreadsheetsClient,
 		FilesClient:        filesClient,
 		DeadNationClient:   deadNationClient,
+		PaymentClient:      paymentClient,
 		Ticket:             ticket.NewService(repo.Ticket),
 		Show:               show.NewService(repo.Show),
 		Booking:            booking.NewService(repo.Booking),

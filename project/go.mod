@@ -2,8 +2,6 @@ module tickets
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/ThreeDotsLabs/go-event-driven v0.0.12
 	github.com/ThreeDotsLabs/watermill v1.3.2

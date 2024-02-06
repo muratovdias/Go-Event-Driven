@@ -34,6 +34,7 @@ func Initialize(
 	spreadsheetsClient spreadsheetsClient,
 	filesClient filesClient,
 	deadNationClient deadNationClient,
+	paymentClient paymentClient,
 	redisClient *redis.Client,
 	db *sqlx.DB,
 ) *App {
@@ -63,7 +64,7 @@ func Initialize(
 	repo := repository.NewRepository(db)
 
 	// service init
-	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, repo)
+	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, paymentClient, repo)
 
 	// handler init
 	handler := v1.NewHandler(eventBus, commandBus, serv, watermillLogger)
