@@ -12,6 +12,7 @@ import (
 
 type ReceiptsClient interface {
 	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
+	// TODO: void the receipt
 }
 
 type SpreadsheetsClient interface {
@@ -49,6 +50,7 @@ type Service struct {
 	Ticket
 	Show
 	Booking
+	// TODO: payment service
 }
 
 func NewService(receiptsClient ReceiptsClient,

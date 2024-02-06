@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/ThreeDotsLabs/go-event-driven/common/log"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/jmoiron/sqlx"
@@ -15,6 +14,7 @@ import (
 	"os"
 	"os/signal"
 	broker2 "tickets/internal/broker"
+	"tickets/internal/broker/command"
 	"tickets/internal/broker/event"
 	"tickets/internal/broker/outbox"
 	"tickets/internal/repository"
@@ -48,7 +48,13 @@ func Initialize(
 	publisher = &log.CorrelationPublisherDecorator{Publisher: publisher}
 
 	// event bus init
-	eventBus, err := broker2.NewEventBus(publisher)
+	eventBus, err := event.NewEventBus(publisher)
+	if err != nil {
+		panic(err)
+	}
+
+	// command bus init
+	commandBus, err := command.NewCommandBus(publisher)
 	if err != nil {
 		panic(err)
 	}
@@ -60,17 +66,20 @@ func Initialize(
 	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, repo)
 
 	// handler init
-	handler := v1.NewHandler(eventBus, serv, watermillLogger)
+	handler := v1.NewHandler(eventBus, commandBus, serv, watermillLogger)
 
 	// postgres subscriber
 	postgresSubscriber := outbox.NewPostgresSubscriber(db, watermillLogger)
 
 	// event processor config
-	eventProcessorConfig := event.NewProcessorConfig(redisClient, watermillLogger)
+	eventProcessorConfig := event.NewEventProcessorConfig(redisClient, watermillLogger)
+
+	// command processor config
+	commandProcessorConfig := command.NewCommandProcessorConfig(redisClient, watermillLogger)
 
 	// broker router init
 	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisher,
-		eventProcessorConfig, watermillLogger)
+		eventProcessorConfig, commandProcessorConfig, watermillLogger)
 
 	// set http routes
 	httpRouter := handler.SetRoutes()
@@ -94,7 +103,6 @@ func (a *App) Start() {
 
 	g.Go(func() error {
 		err := a.watermillRouter.Run(ctx)
-		fmt.Printf("errrrrrrror: %s\n", err.Error())
 		return err
 	})
 

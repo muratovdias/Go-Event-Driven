@@ -1,36 +1,33 @@
-# Add ticket limits
+# Handling refunds
 
-The final functionality that we need to implement before using our new endpoint in production is imposing limits on how many tickets we can sell.
-We have this information in the `shows` table, so now we just need to enforce it.
+It's time to handle the refund command.
+To handle refunds, we need to do two things:
 
+1. Void the receipt.
+2. Refund the payment.
 
-<div class="alert alert-dismissible bg-info text-white d-flex flex-column flex-sm-row p-7 mb-10">
-    <div class="d-flex flex-column">
-        <h3 class="mb-5 text-white">
-			Background	
-		</h3>
-        <span>
+Clients from `github.com/ThreeDotsLabs/go-event-driven/common/clients` support both operations:
 
-If shows are more popular, our API may receive up to 20 concurrent requests to book tickets for the same show.
-We will verify that our solution can handle that without overbooking.
+```go
+clients.Payments.PutRefundsWithResponse(ctx, payments.PaymentRefundRequest{
+    // we are using TicketID as a payment reference
+    PaymentReference: command.TicketID,
+    Reason:           "customer requested refund",
+    DeduplicationId:  &command.Header.IdempotencyKey,
+})
+```
 
-</span>
-	</div>
-	</div>
+and
 
-## Exercise
+```go
+clients.Receipts.PutVoidReceiptWithResponse(ctx, receipts.VoidReceiptRequest{
+    Reason:       "customer requested refund",
+    TicketId:     command.TicketID,
+    IdempotentId: &command.Header.IdempotencyKey,
+})
+```
 
-File: `project/main.go`
-
-Enforce the limit of available tickets in the `POST /book-tickets` endpoint.
-Our endpoint should return `http.StatusBadRequest` if there are not enough tickets available.
-
-It's fully up to you how you implement this logic.
-The simplest approach may be doing it inside the repository method used to store the booking:
-You can just simply get the number of available tickets and already booked tickets and compare them.
-
-Make sure that you are doing this within the same transaction as the booking is stored in the database.
-You should also use the `sql.LevelSerializable` isolation level to make sure that you are not overbooking.
+They are both idempotent, so we can handle them in a single command handler.
 
 
 <div class="alert alert-dismissible bg-light-primary d-flex flex-column flex-sm-row p-7 mb-10">
@@ -43,16 +40,20 @@ You should also use the `sql.LevelSerializable` isolation level to make sure tha
 		</h3>
         <span>
 
-You can read more about PostgreSQL serializable transactions [in official documentation](https://www.postgresql.org/docs/13/transaction-iso.html#XACT-SERIALIZABLE)
-and [this article](https://mkdev.me/posts/transaction-isolation-levels-with-postgresql-as-an-example).
+Do you remember how idempotency works? If not, check the [idempotency key](/trainings/go-event-driven/exercise/d295e9e2-4cb4-49b2-bf73-28635208a78d) exercise.
+
+This API is called from the browser, so the idempotency key will not be set by the client.
+You should generate it by yourself in an HTTP handler.
 
 </span>
 	</div>
 	</div>
 
-We will not check your component tests, but we recommend implementing them. 
-This it's a critical functionality, so it's good to have some tests to make sure that it works as expected.
+## Exercise
 
-Please try to implement tests yourself. In example solution you can see how we made it.
+File: `project/main.go`
 
-You can check the [component testing](/trainings/go-event-driven/exercise/56368c8e-1998-4e02-9a7d-b30b8a4af14f) exercise to remind yourself of how to run tests locally.
+Implement the refund command handler.
+
+For now, let's assume that commands will be handled eventually and won't spin forever.
+We will take care of that in the _observability and monitoring_ module.

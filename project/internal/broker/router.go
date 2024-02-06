@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"fmt"
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
@@ -10,16 +11,18 @@ import (
 )
 
 type broker struct {
-	eventHandlers   *eventHandlers
-	watermillLogger watermill.LoggerAdapter
-	router          *message.Router
-	eventProcessor  *cqrs.EventProcessor
+	eventHandlers    *eventHandlers
+	watermillLogger  watermill.LoggerAdapter
+	router           *message.Router
+	eventProcessor   *cqrs.EventProcessor
+	commandProcessor *cqrs.CommandProcessor
 }
 
 func NewWatermillRouter(service serviceI,
 	postgresSubscriber message.Subscriber,
 	publisher message.Publisher,
 	eventProcessorConfig cqrs.EventProcessorConfig,
+	commandProcessorConfig cqrs.CommandProcessorConfig,
 	watermillLogger watermill.LoggerAdapter,
 ) *message.Router {
 	// validate
@@ -48,14 +51,22 @@ func NewWatermillRouter(service serviceI,
 	// initialize event handlers
 	broker.eventHandlers = newEventHandlers(service)
 
-	// initialize broker subscribers
+	// initialize event subscriber
 	broker.eventProcessor, err = cqrs.NewEventProcessorWithConfig(router, eventProcessorConfig)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("initialize event subscriber failed: %w", err))
+	}
+
+	// initialize command subscriber
+	broker.commandProcessor, err = cqrs.NewCommandProcessorWithConfig(router, commandProcessorConfig)
+	if err != nil {
+		panic(fmt.Errorf("initialize command subscriber failed: %w", err))
 	}
 
 	// set broker handlers
 	broker.setEventHandler()
+
+	// TODO: set command handlers
 
 	// set middlewares
 	broker.setMiddlewares()

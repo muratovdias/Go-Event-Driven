@@ -13,6 +13,7 @@ func (h *Handler) SetRoutes() *echo.Echo {
 	router.GET("/health", h.Health)
 	router.POST("/shows", h.NewShow)
 	router.POST("/book-tickets", h.BookTicket)
+	router.PUT("/ticket-refund/:ticket_id", h.RefundTicket)
 
 	return router
 }

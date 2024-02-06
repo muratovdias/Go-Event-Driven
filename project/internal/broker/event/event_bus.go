@@ -1,4 +1,4 @@
-package broker
+package event
 
 import (
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"

@@ -1,4 +1,4 @@
-package event
+package command
 
 import (
 	"github.com/ThreeDotsLabs/watermill"
@@ -12,12 +12,12 @@ var marshaller = cqrs.JSONMarshaler{
 	GenerateName: cqrs.StructName,
 }
 
-func NewProcessorConfig(redisClient *redis.Client, watermillLogger watermill.LoggerAdapter) cqrs.EventProcessorConfig {
-	return cqrs.EventProcessorConfig{
-		GenerateSubscribeTopic: func(params cqrs.EventProcessorGenerateSubscribeTopicParams) (string, error) {
-			return params.EventName, nil
+func NewCommandProcessorConfig(redisClient *redis.Client, watermillLogger watermill.LoggerAdapter) cqrs.CommandProcessorConfig {
+	return cqrs.CommandProcessorConfig{
+		GenerateSubscribeTopic: func(params cqrs.CommandProcessorGenerateSubscribeTopicParams) (string, error) {
+			return params.CommandName, nil
 		},
-		SubscriberConstructor: func(params cqrs.EventProcessorSubscriberConstructorParams) (message.Subscriber, error) {
+		SubscriberConstructor: func(params cqrs.CommandProcessorSubscriberConstructorParams) (message.Subscriber, error) {
 			return redisstream.NewSubscriber(redisstream.SubscriberConfig{
 				Client:        redisClient,
 				ConsumerGroup: "svc-tickets." + params.HandlerName,

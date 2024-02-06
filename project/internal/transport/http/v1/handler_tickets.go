@@ -1,10 +1,10 @@
 package v1
 
 import (
-	"context"
 	"fmt"
-	"github.com/ThreeDotsLabs/watermill"
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/sirupsen/logrus"
 	"net/http"
 	"tickets/internal/entities"
 )
@@ -28,48 +28,35 @@ func (h *Handler) Tickets(c echo.Context) error {
 		switch ticket.Status {
 		case "confirmed":
 			// publish message
-			err := h.publisher.Publish(context.Background(), entities.TicketBookingConfirmed{
+			err := h.eventPublisher.Publish(c.Request().Context(), entities.TicketBookingConfirmed{
 				Header:        ticket.Header,
 				TicketID:      ticket.TicketID,
 				CustomerEmail: ticket.CustomerEmail,
 				Price:         ticket.Price,
 			})
 			if err != nil {
-				h.watermillLogger.Error("send message to TicketBookingConfirmed topic", err, watermill.LogFields{})
+				logrus.Error("send message to TicketBookingConfirmed topic: ", err)
 			}
 
-			err = h.publisher.Publish(context.Background(), entities.TicketPrinted{
+			err = h.eventPublisher.Publish(c.Request().Context(), entities.TicketPrinted{
 				Header:   ticket.Header,
 				TicketID: ticket.TicketID,
 				FileName: fmt.Sprintf("%s-ticket.html", ticket.TicketID),
 			})
 			if err != nil {
-				h.watermillLogger.Error("send message to TicketPrinted topic", err, watermill.LogFields{})
+				logrus.Error("send message to TicketPrinted topic: ", err)
 			}
-			//log.Println("messages sent")
-			//h.watermillLogger.Info("messages sent", nil)
-
-			//confirmed := entities.TicketBookingConfirmed{
-			//	Header:        ticket.Header,
-			//	TicketID:      ticket.TicketID,
-			//	CustomerEmail: ticket.CustomerEmail,
-			//	Price:         ticket.Price,
-			//}
-			//_, err = h.service.IssueReceipt(c.Request().Context(), confirmed.ToIssueReceiptPayload())
-			//if err != nil {
-			//	return err
-			//}
 
 		case "canceled":
 			// publish message
-			err := h.publisher.Publish(context.Background(), entities.TicketBookingCanceled{
+			err := h.eventPublisher.Publish(c.Request().Context(), entities.TicketBookingCanceled{
 				Header:        ticket.Header,
 				TicketID:      ticket.TicketID,
 				CustomerEmail: ticket.CustomerEmail,
 				Price:         ticket.Price,
 			})
 			if err != nil {
-				h.watermillLogger.Error("send message to issue-receipts topic", err, watermill.LogFields{})
+				logrus.Error("send message to TicketBookingCanceled topic: ", err)
 			}
 		}
 	}
@@ -83,6 +70,21 @@ func (h *Handler) TicketsList(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, tickets)
+}
+
+func (h *Handler) RefundTicket(c echo.Context) error {
+	ticketID := c.Param("ticket_id")
+
+	event := entities.RefundTicket{
+		Header:   entities.NewEventHeader(uuid.NewString()),
+		TicketID: ticketID,
+	}
+
+	if err := h.commandPublisher.Send(c.Request().Context(), event); err != nil {
+		return fmt.Errorf("failed to send RefundTicket command: %w", err)
+	}
+
+	return c.NoContent(http.StatusAccepted)
 }
 
 func (h *Handler) Health(c echo.Context) error {

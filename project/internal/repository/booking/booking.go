@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/jmoiron/sqlx"
-	"tickets/internal/broker"
+	"tickets/internal/broker/event"
 	"tickets/internal/broker/outbox"
 	"tickets/internal/entities"
 )
@@ -82,7 +82,7 @@ func (r *Repo) BookTicket(ctx context.Context, booking entities.Booking) (string
 		return "", fmt.Errorf("could not create event bus: %w", err)
 	}
 
-	eventBus, err := broker.NewEventBus(outboxPublisher)
+	eventBus, err := event.NewEventBus(outboxPublisher)
 	if err != nil {
 		return "", fmt.Errorf("could not create event bus for book ticket: %w", err)
 	}
