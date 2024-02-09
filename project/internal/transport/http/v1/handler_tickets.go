@@ -76,7 +76,7 @@ func (h *Handler) RefundTicket(c echo.Context) error {
 	ticketID := c.Param("ticket_id")
 
 	event := entities.RefundTicket{
-		Header:   entities.NewEventHeader(uuid.NewString()),
+		Header:   entities.NewCommandHeader(uuid.NewString()),
 		TicketID: ticketID,
 	}
 

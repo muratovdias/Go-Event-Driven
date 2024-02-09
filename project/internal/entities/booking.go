@@ -1,6 +1,8 @@
 package entities
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 type Booking struct {
 	BookingID uuid.UUID `json:"booking_id" db:"booking_id"`

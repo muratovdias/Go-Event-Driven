@@ -68,7 +68,7 @@ func (c *Client) PutVoidReceiptWithResponse(ctx context.Context, command entitie
 
 	if response.StatusCode() != 200 {
 		logrus.Infof("PutRefundsWithResponse status code: %d", response.StatusCode())
-		return fmt.Errorf("unexpected status code: %d", response.StatusCode())
+		return fmt.Errorf("unexpected status code for POST receipts-api/receipts/void: %d", response.StatusCode())
 	}
 
 	return nil

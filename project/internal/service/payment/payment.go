@@ -6,6 +6,7 @@ import (
 	"github.com/ThreeDotsLabs/go-event-driven/common/clients"
 	"github.com/ThreeDotsLabs/go-event-driven/common/clients/payments"
 	"github.com/sirupsen/logrus"
+	"net/http"
 	"tickets/internal/entities"
 )
 
@@ -31,11 +32,13 @@ func (c *Client) PutRefundsWithResponse(ctx context.Context, command entities.Re
 	response, err := c.clients.Payments.PutRefundsWithResponse(ctx, body)
 	if err != nil {
 		logrus.Errorf("PutRefundsWithResponse: %v", err)
-		return err
+		return fmt.Errorf("failed to post refund for payment %s: %w", command.TicketID, err)
 	}
-	if response.StatusCode() != 200 {
+
+	if response.StatusCode() != http.StatusOK {
 		logrus.Infof("PutRefundsWithResponse status code: %d", response.StatusCode())
-		return fmt.Errorf("unexpected status code for PUT /refunds: %d", response.StatusCode())
+		return fmt.Errorf("unexpected for /payments-api/refunds status code: %d", response.StatusCode())
 	}
+
 	return nil
 }

@@ -1,6 +1,7 @@
 package command
 
 import (
+	"fmt"
 	"github.com/ThreeDotsLabs/watermill"
 	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
@@ -15,7 +16,7 @@ var marshaller = cqrs.JSONMarshaler{
 func NewCommandProcessorConfig(redisClient *redis.Client, watermillLogger watermill.LoggerAdapter) cqrs.CommandProcessorConfig {
 	return cqrs.CommandProcessorConfig{
 		GenerateSubscribeTopic: func(params cqrs.CommandProcessorGenerateSubscribeTopicParams) (string, error) {
-			return params.CommandName, nil
+			return fmt.Sprintf("commands.%s", params.CommandName), nil
 		},
 		SubscriberConstructor: func(params cqrs.CommandProcessorSubscriberConstructorParams) (message.Subscriber, error) {
 			return redisstream.NewSubscriber(redisstream.SubscriberConfig{
