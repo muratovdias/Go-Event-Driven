@@ -16,12 +16,14 @@ type broker struct {
 	watermillLogger  watermill.LoggerAdapter
 	router           *message.Router
 	eventProcessor   *cqrs.EventProcessor
+	eventPublisher   eventPublisher
 	commandProcessor *cqrs.CommandProcessor
 }
 
 func NewWatermillRouter(service serviceI,
 	postgresSubscriber message.Subscriber,
 	publisher message.Publisher,
+	eventPublisher eventPublisher,
 	eventProcessorConfig cqrs.EventProcessorConfig,
 	commandProcessorConfig cqrs.CommandProcessorConfig,
 	watermillLogger watermill.LoggerAdapter,
@@ -34,6 +36,10 @@ func NewWatermillRouter(service serviceI,
 		panic("missing postgresSubscriber")
 	}
 	if publisher == nil {
+		panic("missing publisher")
+	}
+
+	if eventPublisher == nil {
 		panic("missing publisher")
 	}
 
@@ -50,10 +56,10 @@ func NewWatermillRouter(service serviceI,
 	}
 
 	// initialize event handlers
-	broker.eventHandlers = newEventHandlers(service)
+	broker.eventHandlers = newEventHandlers(service, eventPublisher)
 
 	// initialize command handlers
-	broker.commandHandlers = newCommandHandlers(service)
+	broker.commandHandlers = newCommandHandlers(service, eventPublisher)
 
 	// initialize event subscriber
 	broker.eventProcessor, err = cqrs.NewEventProcessorWithConfig(router, eventProcessorConfig)

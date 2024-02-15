@@ -31,3 +31,7 @@ type serviceI interface {
 	// Payment
 	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
 }
+
+type eventPublisher interface {
+	Publish(ctx context.Context, event any) error
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ThreeDotsLabs/go-event-driven/common/log"
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
+	"github.com/sirupsen/logrus"
 	"tickets/internal/entities"
 )
 
@@ -12,14 +13,18 @@ type eventHandlers struct {
 	ticketHandler *ticketHandler
 }
 
-func newEventHandlers(service serviceI) *eventHandlers {
+func newEventHandlers(service serviceI, eventPublisher eventPublisher) *eventHandlers {
 	return &eventHandlers{
-		ticketHandler: &ticketHandler{service: service},
+		ticketHandler: &ticketHandler{
+			service:        service,
+			eventPublisher: eventPublisher,
+		},
 	}
 }
 
 type ticketHandler struct {
-	service serviceI
+	service        serviceI
+	eventPublisher eventPublisher
 }
 
 func (t *ticketHandler) IssueReceipt(ctx context.Context, event *entities.TicketBookingConfirmed) error {
@@ -27,8 +32,18 @@ func (t *ticketHandler) IssueReceipt(ctx context.Context, event *entities.Ticket
 		event.Price.Currency = "USD"
 	}
 
-	_, err := t.service.IssueReceipt(ctx, event.ToIssueReceiptPayload())
+	response, err := t.service.IssueReceipt(ctx, event.ToIssueReceiptPayload())
 	if err != nil {
+		return err
+	}
+
+	if err = t.eventPublisher.Publish(ctx, entities.TicketReceiptIssued{
+		Header:        event.Header,
+		TicketID:      event.TicketID,
+		ReceiptNumber: response.ReceiptNumber,
+		IssuedAt:      response.IssuedAt,
+	}); err != nil {
+		logrus.Error("send message to TicketBookingConfirmed topic: ", err)
 		return err
 	}
 

@@ -79,7 +79,7 @@ func Initialize(
 	commandProcessorConfig := command.NewCommandProcessorConfig(redisClient, watermillLogger)
 
 	// broker router init
-	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisher,
+	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisher, eventBus,
 		eventProcessorConfig, commandProcessorConfig, watermillLogger)
 
 	// set http routes

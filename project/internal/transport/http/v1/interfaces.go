@@ -6,11 +6,11 @@ import (
 	"tickets/internal/service"
 )
 
-type publisher interface {
+type eventPublisher interface {
 	Publish(ctx context.Context, event any) error
 }
 
-type sender interface {
+type commandSender interface {
 	Send(ctx context.Context, cmd any) error
 }
 

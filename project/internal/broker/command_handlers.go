@@ -9,9 +9,12 @@ type commandHandlers struct {
 	ticketHandler *ticketHandler
 }
 
-func newCommandHandlers(service serviceI) *commandHandlers {
+func newCommandHandlers(service serviceI, publisher eventPublisher) *commandHandlers {
 	return &commandHandlers{
-		ticketHandler: &ticketHandler{service: service},
+		ticketHandler: &ticketHandler{
+			service:        service,
+			eventPublisher: publisher,
+		},
 	}
 }
 
