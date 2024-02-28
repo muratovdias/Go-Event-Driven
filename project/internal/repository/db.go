@@ -29,11 +29,8 @@ func InitDB() (*sqlx.DB, error) {
 }
 
 func createTables(db *sqlx.DB) error {
-	tables := []string{TicketsTable, ShowsTable, BookingTable}
-	for _, table := range tables {
-		if _, err := db.Exec(table); err != nil {
-			return err
-		}
+	if _, err := db.Exec(SchemaPostgres); err != nil {
+		return err
 	}
 
 	return nil

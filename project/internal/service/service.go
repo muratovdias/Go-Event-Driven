@@ -12,7 +12,7 @@ import (
 
 type ReceiptsClient interface {
 	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
-	PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
+	PutVoidReceiptWithResponse(ctx context.Context, command entities.VoidReceipt) error
 }
 
 type SpreadsheetsClient interface {
@@ -43,7 +43,7 @@ type Booking interface {
 }
 
 type PaymentClient interface {
-	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
+	PutRefundsWithResponse(ctx context.Context, command entities.PaymentRefund) error
 }
 
 type Service struct {

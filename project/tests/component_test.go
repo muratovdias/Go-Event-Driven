@@ -34,12 +34,13 @@ func TestComponent(t *testing.T) {
 		panic(err)
 	}
 
-	receiptClient := &mock.ReceiptMock{IssuedReceipts: make([]entities.IssueReceiptRequest, 0)}
+	receiptClient := &mock.ReceiptMock{IssuedReceipts: map[string]entities.IssueReceiptRequest{}}
 	spreadsheetClient := &mock.SpreadsheetsMock{Rows: make(map[string][][]string)}
 	filesClient := &mock.FilesMock{Tickets: make(map[string]struct{})}
 	deadNationClient := &mock.DeadNationClient{DeadNationBookings: make([]entities.DeadNationBooking, 0)}
+	paymentsService := &mock.PaymentsMock{}
 
-	app1 := app.Initialize(receiptClient, spreadsheetClient, filesClient, deadNationClient, rdb, db)
+	app1 := app.Initialize(receiptClient, spreadsheetClient, filesClient, deadNationClient, paymentsService, rdb, db)
 	go app1.Start()
 
 	waitForHttpServer(t)

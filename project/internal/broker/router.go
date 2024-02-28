@@ -6,24 +6,28 @@ import (
 	"github.com/ThreeDotsLabs/watermill/components/cqrs"
 	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/ThreeDotsLabs/watermill/message/router/middleware"
+	"tickets/internal/broker/command"
+	"tickets/internal/broker/event"
 	"tickets/internal/broker/outbox"
 	"time"
 )
 
 type broker struct {
-	eventHandlers    *eventHandlers
-	commandHandlers  *commandHandlers
+	eventHandler     *event.Handler
+	commandHandler   *command.Handler
 	watermillLogger  watermill.LoggerAdapter
 	router           *message.Router
 	eventProcessor   *cqrs.EventProcessor
-	eventPublisher   eventPublisher
+	eventPublisher   *cqrs.EventBus
 	commandProcessor *cqrs.CommandProcessor
 }
 
-func NewWatermillRouter(service serviceI,
+func NewWatermillRouter(service ServiceI,
 	postgresSubscriber message.Subscriber,
+	commandHandler *command.Handler,
+	eventHandler *event.Handler,
 	publisher message.Publisher,
-	eventPublisher eventPublisher,
+	eventPublisher *cqrs.EventBus,
 	eventProcessorConfig cqrs.EventProcessorConfig,
 	commandProcessorConfig cqrs.CommandProcessorConfig,
 	watermillLogger watermill.LoggerAdapter,
@@ -56,10 +60,10 @@ func NewWatermillRouter(service serviceI,
 	}
 
 	// initialize event handlers
-	broker.eventHandlers = newEventHandlers(service, eventPublisher)
+	broker.eventHandler = eventHandler
 
 	// initialize command handlers
-	broker.commandHandlers = newCommandHandlers(service, eventPublisher)
+	broker.commandHandler = commandHandler
 
 	// initialize event subscriber
 	broker.eventProcessor, err = cqrs.NewEventProcessorWithConfig(router, eventProcessorConfig)
@@ -87,7 +91,7 @@ func NewWatermillRouter(service serviceI,
 
 func (b *broker) setEventHandlers() {
 	err := b.eventProcessor.AddHandlers(
-		b.eventHandlers.ticketHandler.ticketEventHandlers()...,
+		b.eventHandler.TicketEventHandlers()...,
 	)
 	if err != nil {
 		panic(err)
@@ -96,7 +100,7 @@ func (b *broker) setEventHandlers() {
 
 func (b *broker) setCommandHandlers() {
 	err := b.commandProcessor.AddHandlers(
-		b.commandHandlers.ticketHandler.ticketCommandHandler()...,
+		b.commandHandler.TicketCommandHandler()...,
 	)
 	if err != nil {
 		panic(err)

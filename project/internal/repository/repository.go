@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"tickets/internal/entities"
 	"tickets/internal/repository/booking"
+	"tickets/internal/repository/readModel"
 	"tickets/internal/repository/show"
 	"tickets/internal/repository/ticket"
 )
@@ -25,10 +26,20 @@ type Booking interface {
 	BookTicket(ctx context.Context, booking entities.Booking) (string, error)
 }
 
+type Ops interface {
+	AllReservations() ([]entities.OpsBooking, error)
+	ReservationReadModel(ctx context.Context, bookingID string) (entities.OpsBooking, error)
+	OnBookingMade(ctx context.Context, bookingMade *entities.BookingMade) error
+	OnTicketBookingConfirmed(ctx context.Context, event *entities.TicketBookingConfirmed) error
+	OnTicketRefunded(ctx context.Context, event *entities.RefundTicket) error
+	OnTicketPrinted(ctx context.Context, event *entities.TicketPrinted) error
+}
+
 type Repository struct {
 	Ticket  Ticket
 	Show    Show
 	Booking Booking
+	Ops     Ops
 }
 
 func NewRepository(db *sqlx.DB) *Repository {
@@ -36,5 +47,6 @@ func NewRepository(db *sqlx.DB) *Repository {
 		Ticket:  ticket.NewRepo(db),
 		Show:    show.NewRepo(db),
 		Booking: booking.NewRepo(db),
+		Ops:     readModel.NewOpsBookingReadModel(db),
 	}
 }

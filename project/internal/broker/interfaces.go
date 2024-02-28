@@ -4,12 +4,14 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"tickets/internal/entities"
+	"tickets/internal/service"
 )
 
-type serviceI interface {
+type ServiceI interface {
 	// Receipts
-	IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
-	PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
+	//IssueReceipt(ctx context.Context, request entities.IssueReceiptRequest) (entities.IssueReceiptResponse, error)
+	//PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error
+	service.ReceiptsClient
 
 	// Spreadsheets
 	AppendRow(ctx context.Context, spreadsheetName string, row []string) error
@@ -29,9 +31,10 @@ type serviceI interface {
 	TicketList(ctx context.Context) ([]entities.TicketList, error)
 
 	// Payment
-	PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
+	//PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error
+	service.PaymentClient
 }
 
-type eventPublisher interface {
+type EventPublisher interface {
 	Publish(ctx context.Context, event any) error
 }

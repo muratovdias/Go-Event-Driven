@@ -22,9 +22,9 @@ func NewPaymentClient(clients *clients.Clients) *Client {
 	return &Client{clients: clients}
 }
 
-func (c *Client) PutRefundsWithResponse(ctx context.Context, command entities.RefundTicket) error {
+func (c *Client) PutRefundsWithResponse(ctx context.Context, command entities.PaymentRefund) error {
 	body := payments.PutRefundsJSONRequestBody{
-		DeduplicationId:  &command.Header.IdempotencyKey,
+		DeduplicationId:  &command.IdempotencyKey,
 		PaymentReference: command.TicketID,
 		Reason:           "customer requested refund",
 	}

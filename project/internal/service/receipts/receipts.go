@@ -53,11 +53,11 @@ func (c *Client) IssueReceipt(ctx context.Context, request entities.IssueReceipt
 	}
 }
 
-func (c *Client) PutVoidReceiptWithResponse(ctx context.Context, command entities.RefundTicket) error {
+func (c *Client) PutVoidReceiptWithResponse(ctx context.Context, command entities.VoidReceipt) error {
 	body := receipts.PutVoidReceiptJSONRequestBody{
 		Reason:       "customer requested refund",
 		TicketId:     command.TicketID,
-		IdempotentId: &command.Header.IdempotencyKey,
+		IdempotentId: &command.IdempotencyKey,
 	}
 
 	response, err := c.clients.Receipts.PutVoidReceiptWithResponse(ctx, body)

@@ -17,9 +17,9 @@ import (
 	"tickets/internal/broker/command"
 	"tickets/internal/broker/event"
 	"tickets/internal/broker/outbox"
+	v1 "tickets/internal/http/v1"
 	"tickets/internal/repository"
 	"tickets/internal/service"
-	v1 "tickets/internal/transport/http/v1"
 	"time"
 )
 
@@ -66,6 +66,23 @@ func Initialize(
 	// service init
 	serv := service.NewService(receiptsClient, spreadsheetsClient, filesClient, deadNationClient, paymentClient, repo)
 
+	eventsHandler := event.NewHandler(
+		serv.DeadNationClient,
+		serv.SpreadsheetsClient,
+		serv.ReceiptsClient,
+		serv.FilesClient,
+		serv.Ticket,
+		serv.Show,
+		serv.Booking,
+		eventBus,
+	)
+
+	commandsHandler := command.NewHandler(
+		eventBus,
+		serv.ReceiptsClient,
+		serv.PaymentClient,
+	)
+
 	// handler init
 	handler := v1.NewHandler(eventBus, commandBus, serv, watermillLogger)
 
@@ -79,7 +96,7 @@ func Initialize(
 	commandProcessorConfig := command.NewCommandProcessorConfig(redisClient, watermillLogger)
 
 	// broker router init
-	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, publisher, eventBus,
+	brokerRouter := broker2.NewWatermillRouter(serv, postgresSubscriber, &commandsHandler, &eventsHandler, publisher, eventBus,
 		eventProcessorConfig, commandProcessorConfig, watermillLogger)
 
 	// set http routes

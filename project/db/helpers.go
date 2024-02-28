@@ -22,7 +22,7 @@ func getDB() *sqlx.DB {
 		}
 	})
 
-	_, err := db.Exec(repository.TicketsTable)
+	_, err := db.Exec(repository.SchemaPostgres)
 	if err != nil {
 		log.Fatal(err)
 	}
